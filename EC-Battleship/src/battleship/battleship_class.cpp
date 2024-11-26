@@ -8,24 +8,29 @@ Battleship::Battleship() {
   hit = 0;
 }
 
-Battleship::Battleship(int varEjeX[], int varEjeY[]) {
-  
-    for (size_t i = 0; i < sizeof(varEjeX); ++i) {
-      ejeX.push_back(varEjeX[i]);
-      ejeY.push_back(varEjeY[i]);
+Battleship::Battleship(ejes &varEjeX, ejes &varEjeY) {
+  ejeX = varEjeX;
+  ejeY = varEjeY;
+    for (size_t i = 0; i < 3; ++i) 
+    {
+      Serial.println(varEjeX[i]);
+      Serial.println(varEjeY[i]);
     }
-    derribado = false;
-    hit = 0;
-  
+  derribado = false;
+  hit = 0;
 }
 //Destructor.
 Battleship::~Battleship() {
 }
 //Métodos
-void Battleship::mover(const int &x_increment,const int &y_increment) {
+void Battleship::mover(int x_increment,int y_increment) 
+{
+  Serial.println(x_increment);
   for (size_t i = 0; i < ejeX.size(); ++i) {
-    ejeX.assign(i, ejeX.at(i) + x_increment);
-    ejeY.assign(i, ejeY.at(i) + y_increment);
+    ejeX[i] += x_increment;
+    Serial.println(ejeX[i]);
+    ejeY[i] += y_increment;
+    Serial.println(ejeY[i]);
   }
 }
 

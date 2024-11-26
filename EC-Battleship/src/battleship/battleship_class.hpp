@@ -3,18 +3,20 @@
 
 #include <Vector.h>
 
-typedef Vector<int> ejes;
+//typedef Vector<int> ejes;
+
+using ejes = Vector<int>;
 
 class Battleship
 {
     public:
     //Constructores.
     Battleship();
-    Battleship(int varEjeX[], int varEjeY[]);
+    Battleship(ejes &varEjeX, ejes &varEjeY);
     //Destructor.
     ~Battleship();
     //Métodos
-    void mover(const int &x_increment,const int &y_increment);
+    void mover(int x_increment,int y_increment);
     //set
     void set_hit(const unsigned &var_hit);
     void set_derribado(const bool &var_derribado);
