@@ -54,7 +54,7 @@ unsigned char eventos;
 
 // NES
 
-byte nesRegister[2] = {0,0};
+byte nesRegister[2] = {0,0};  //jugador1, jugador2
 int data[2] = {4, 10};  // Pin de datos del controlador NES verde
 int clk = 2;   // Pin de clock del controlador NES blanco
 int latch[2] = {3, 9}; // Pin de latch del controlador NES negro
@@ -74,6 +74,32 @@ void inicializarX(ejes &valor, int inicio)
     valor.push_back(inicio);
     // Serial.println(valor[i]);
   }
+}
+
+void mover_puntero(unsigned jugador,int &puntero[2])  //puntero[0] -> eje X ,  puntero[1] -> eje Y
+{
+  //puntero[0] = 0;
+  //puntero[1] = 0;
+ // Movimientos de la cruceta
+ while(bitRead(nesRegister[jugador], A_BUTTON) != 0))
+ {
+  if (bitRead(nesRegister[jugador], UP_BUTTON) == 0 && puntero[1] > 0) {  //límite superior
+    --puntero[1];
+    Serial.println("arriba");
+  } 
+  if (bitRead(nesRegister[jugador], DOWN_BUTTON) == 0 && puntero[1] < MATRIX_HEIGHT -1) {  //límite inferior
+    ++puntero[1];
+    Serial.println("abajo");
+  }
+  if (bitRead(nesRegister[jugador], RIGHT_BUTTON) == 0 && puntero[0] < MATRIX_WIDTH - 1) { //límite derecha
+    ++puntero[0];
+    Serial.println("derecha");
+  }
+  if (bitRead(nesRegister[jugador], LEFT_BUTTON) == 0 && puntero[0] > 0) { //límite izquierda
+    --puntero[0];
+    Serial.println("izquierda");
+  }
+ }
 }
 
 void inicializarY(ejes &valor, int inicio)
@@ -104,7 +130,7 @@ int ledY[2][NUM_BARCOS][TAM];
 // Color del led en formato RGB
 uint32_t colorLed = led_matrix.Color(255, 0, 0); // Rojo puro
 // Funciones con barcos
-//1 <= jugador <= 2;  
+//0 <= jugador <= 1;  
 void colocar_barcos(unsigned jugador, unsigned &id_barco)
 {
   // Movimientos de la cruceta
@@ -139,7 +165,25 @@ void colocar_barcos(unsigned jugador, unsigned &id_barco)
   }
 }
 
-void atacar(Battleship atacante, Battleship defensor);
+void atacar(unsigned jugador)
+{ //el jugador atacante seleccionará una casilla hasta que pulse el botón A. En ese momento, se comprobará si ha tocado un barco o no, con sus respectivas ramificaciones
+  int puntero[2]; //almacena el lugar de la matriz donde se está apuntando
+  
+  for(int i=0; i<NUM_BARCOS; ++i)
+  {
+    mover_puntero(jugador, &puntero);
+
+    if (bitRead(nesRegister, A_BUTTON) == 0) {
+      colorActual = matrix.Color(0, 0, 255);  // Azul
+    } 
+  }
+  
+  if(bitRead(nesRegister[jugador], A_BUTTON) == 0)
+  {
+    defensor.sethit();
+    if()
+  }
+}
 
 void display(unsigned jugador, unsigned id_barco)
 {
@@ -226,8 +270,10 @@ void loop()
     static int j = 0;
     while(i < NUM_BARCOS || j < NUM_BARCOS)
     {
-        
+        colocar_barcos(0,i);
+        colocar_barcos(1,j);
     }
+    estado = TURNO_JUGADOR_1;
     break;
   case TURNO_JUGADOR_1:
 

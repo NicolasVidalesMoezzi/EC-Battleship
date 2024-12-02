@@ -38,6 +38,23 @@ void Battleship::mover(int x_increment, int y_increment)
   }
 }
 
+bool Battleship::find(unsigned jugador,int &puntero[2])
+{
+  int cont_tocado = 0;
+  for(int i=0; i<ejeX.size(); ++i)
+  {
+    if(puntero[0] == ejeX[i])
+    {
+      ++cont_tocado;
+    }
+    if(puntero[1] == ejeY[i])
+    {
+      ++cont_tocado;
+    }
+  }
+  return(cont_tocado == 2);
+}
+
 // set
 void Battleship::set_hit(const unsigned &var_hit)
 {

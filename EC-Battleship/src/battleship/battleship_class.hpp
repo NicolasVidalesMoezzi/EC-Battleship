@@ -17,6 +17,7 @@ class Battleship
     ~Battleship();
     //Métodos
     void mover(int x_increment,int y_increment);
+    bool find(unsigned jugador,int &puntero[2]);
     //set
     void set_hit(const unsigned &var_hit);
     void set_derribado(const bool &var_derribado);
