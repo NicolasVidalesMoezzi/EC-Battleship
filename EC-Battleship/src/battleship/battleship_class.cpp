@@ -98,11 +98,13 @@ Battleship Battleship::operator^(const bool &rot)
 
     if (rot)
     {
-      nuevo_barco.posiciones.push_back({y, -x});
+      nuevo_barco.ejeX.push_back(-x);
+      nuevo_barco.ejeY.push_back(y);
     }
     else
     {
-      nuevo_barco.posiciones.push_back({-y, x});
+      nuevo_barco.ejeX.push_back(x);
+      nuevo_barco.ejeY.push_back(-y);
     }
   }
 

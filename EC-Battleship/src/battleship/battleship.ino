@@ -3,6 +3,7 @@
 #include "battleship_class.hpp"
 
 #define PIN 6                                  // Pin digital
+#define PIN_2 12                               // Pin digital
 #define MATRIX_WIDTH 16                        // Numero de columnas
 #define MATRIX_HEIGHT 16                       // Numero de filas
 #define NUM_PIXELS MATRIX_WIDTH *MATRIX_HEIGHT // Numero de pixeles
@@ -10,7 +11,7 @@
 
 #define SHIP_WIDTH 1  // Este numero corresponde a la anchura de los barcos
 #define SHIP_HEIGHT 1 // Este numero corresponde a la altura de los barcos
-#define NUM_BARCOS 1  // Numero de barcos
+#define NUM_BARCOS 6  // Numero de barcos
 #define TAM 3
 
 #define COLOCACION 0
@@ -33,6 +34,9 @@
 #define PANTALLA_J1 0
 #define PANTALLA_J2 1
 
+#define der true
+#define izq false
+
 Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 const int A_BUTTON = 0;
@@ -50,10 +54,16 @@ unsigned char eventos;
 
 // NES
 
-byte nesRegister = 0;
-int data = 4;  // Pin de datos del controlador NES verde
+byte nesRegister[2] = {0,0};
+int data[2] = {4, 10};  // Pin de datos del controlador NES verde
 int clk = 2;   // Pin de clock del controlador NES blanco
-int latch = 3; // Pin de latch del controlador NES negro
+int latch[2] = {3, 9}; // Pin de latch del controlador NES negro
+
+/*
+byte nesRegister2 = 0;
+int data2 = 10;
+int latch2 = 9;
+*/
 
 // Barcos
 
@@ -80,60 +90,67 @@ int storage_array[ELEMENT_COUNT_MAX];
 ejes ejeX(storage_array);
 ejes ejeY(storage_array);
 
+
+Battleship barcos[2][NUM_BARCOS];
 // Posicion inicial de los leds. Cambia a arrays si los tamaños de los datos son distintos a uno
 // const unsigned tam = barcos.get_size();
 
-//Jugador 1
-int ledX_j1[NUM_BARCOS][TAM];
-int ledY_j1[NUM_BARCOS][TAM];
-
-//Jugador 2
-int ledX_j2[NUM_BARCOS][TAM];
-int ledY_j2[NUM_BARCOS][TAM];
+//Jugador1, Jugador2
+int ledX[2][NUM_BARCOS][TAM];
+int ledY[2][NUM_BARCOS][TAM];
 
 // Esquina superior izquierda.
 
 // Color del led en formato RGB
 uint32_t colorLed = led_matrix.Color(255, 0, 0); // Rojo puro
 // Funciones con barcos
-
-void colocar_barcos(unsigned id_barco)
+//1 <= jugador <= 2;  
+void colocar_barcos(unsigned jugador, unsigned &id_barco)
 {
   // Movimientos de la cruceta
-  if (bitRead(nesRegister, UP_BUTTON) == 0 && ledY[0] > 0)
+  if (bitRead(nesRegister[jugador], UP_BUTTON) == 0 && ledY[jugador][id_barco][0] > 0)
   { // límite superior
-    barcos[id_barco].mover(0, -1);
+    barcos[jugador][id_barco].mover(0, -1);
     Serial.println("arriba");
   }
-  if (bitRead(nesRegister, DOWN_BUTTON) == 0 && ledY[3] < MATRIX_HEIGHT - 1 - 1)
+  if (bitRead(nesRegister[jugador], DOWN_BUTTON) == 0 && ledY[jugador][id_barco][3] < MATRIX_HEIGHT - 1 - 1)
   { // límite inferior
-    barcos[id_barco].mover(0, 1);
+    barcos[jugador][id_barco].mover(0, 1);
     Serial.println("abajo");
   }
-  if (bitRead(nesRegister, RIGHT_BUTTON) == 0 && ledX[2] > 0)
+  if (bitRead(nesRegister[jugador], RIGHT_BUTTON) == 0 && ledX[jugador][id_barco][2] > 0)
   { // límite derecha
-    barcos[id_barco].mover(1, 0);
+    barcos[jugador][id_barco].mover(1, 0);
     Serial.println("derecha");
   }
-  if (bitRead(nesRegister, LEFT_BUTTON) == 0 && ledX[0] < MATRIX_WIDTH - 1)
+  if (bitRead(nesRegister[jugador], LEFT_BUTTON) == 0 && ledX[jugador][id_barco][0] < MATRIX_WIDTH - 1)
   { // límite izquierda
-    barcos[id_barco].mover(-1, 0);
+    barcos[jugador][id_barco].mover(-1, 0);
     Serial.println("izquierda");
+  }
+  if(bitRead(nesRegister[jugador], B_BUTTON) == 0)
+  {
+    barcos[jugador][id_barco] = barcos[jugador][id_barco]^der;
+    Serial.println("rotar");
+  }
+  if(bitRead(nesRegister[jugador], A_BUTTON) == 0)
+  {
+    id_barco++;
   }
 }
 
 void atacar(Battleship atacante, Battleship defensor);
 
-void display(Battleship barcos[], ejes &ledX, ejes &ledY)
+void display(unsigned jugador, unsigned id_barco)
 {
-  unsigned tam = barcos->get_size();
-  Vector<int> posX = barcos->get_ejeX();
-  Vector<int> posY = barcos->get_ejeY();
+  unsigned tam = barcos[jugador][id_barco].get_size();
+  Vector<int> posX = barcos[jugador][id_barco].get_ejeX();
+  Vector<int> posY = barcos[jugador][id_barco].get_ejeY();
 
   for (unsigned i = 0; i < tam; ++i)
   {
-    ledX[i] = posX[i];
-    ledY[i] = posY[i];
+    ledX[jugador][id_barco][i] = posX[i];
+    ledY[jugador][id_barco][i] = posY[i];
   }
   return;
 }
@@ -154,29 +171,33 @@ int obtenerIndiceMatriz(int x, int y)
 }
 
 // Función para actualizar el LED activo en la matriz
-void actualizarMatriz()
+void actualizarMatriz(unsigned jugador, unsigned id_barco)
 {
   led_matrix.clear(); // Limpia todos los LEDs
   int pixelIndex[TAM];
   for (int i = 0; i < TAM; ++i)
   {
-    pixelIndex[i] = obtenerIndiceMatriz(ledX[i], ledY[i]); // Convierte las coordenadas (X, Y) al índice en la matriz en formato serpiente
+    pixelIndex[i] = obtenerIndiceMatriz(ledX[jugador][id_barco][i], ledY[jugador][id_barco][i]); // Convierte las coordenadas (X, Y) al índice en la matriz en formato serpiente
     led_matrix.setPixelColor(pixelIndex[i], colorLed);     // Establece el color del LED en la posición actual
     led_matrix.show();                                     // Muestra los cambios en la matriz
   }
 }
 
-Vector<Battleship> barcos;
+//int ledX[2][NUM_BARCOS];
+//int ledY[2][NUM_BARCOS];
 
 void setup()
 {
   Serial.begin(9600);
 
-  pinMode(data, INPUT);
+  pinMode(data[0], INPUT);
   pinMode(clk, OUTPUT);
-  pinMode(latch, OUTPUT);
+  pinMode(latch[0], OUTPUT);
+  pinMode(data[1], INPUT);
+  pinMode(latch[1], OUTPUT);
   digitalWrite(clk, LOW);
-  digitalWrite(latch, LOW);
+  digitalWrite(latch[0], LOW);
+  digitalWrite(latch[1], LOW);
 
   // Inicializacion de la matriz
   led_matrix.begin();
@@ -185,19 +206,28 @@ void setup()
 
   inicializarX(ejeX, 7);
   inicializarY(ejeY, 7);
-  barcos = new Battleship(ejeX, ejeY);
   estado = COLOCACION;
+  ledX[2][NUM_BARCOS];
+  ledY[2][NUM_BARCOS];
+  unsigned i = 0;
+  unsigned j = 0;
 }
 
 void loop()
 {
 
-  nesRegister = readNesController();
+  nesRegister[0] = readNesController(0);
+  nesRegister[1] = readNesController(1);
 
   switch (estado)
   {
-  case COLOCACION:
-
+    case COLOCACION:
+    static int i = 0;
+    static int j = 0;
+    while(i < NUM_BARCOS || j < NUM_BARCOS)
+    {
+        
+    }
     break;
   case TURNO_JUGADOR_1:
 
@@ -214,23 +244,24 @@ void loop()
     break;
   }
 
-  display(barcos);
-  actualizarMatriz();
+  /*display(barcos, ledX[0], ledY[0]);
+  display(barcos, ledX[1], ledY[1]);
+  actualizarMatriz();*/
   delay(100);
 }
 
-byte readNesController()
+byte readNesController(int jugador)
 {
   byte tempData = 0xFF;
 
   // Pulso en el latch para leer el estado de los botones
-  digitalWrite(latch, HIGH);
+  digitalWrite(latch[jugador], HIGH);
   delayMicroseconds(2);
-  digitalWrite(latch, LOW);
+  digitalWrite(latch[jugador], LOW);
 
   for (int i = 0; i < 8; i++)
   {
-    if (digitalRead(data) == LOW)
+    if (digitalRead(data[jugador]) == LOW)
       bitClear(tempData, i);
 
     digitalWrite(clk, HIGH);
