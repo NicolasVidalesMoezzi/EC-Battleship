@@ -82,8 +82,15 @@ ejes ejeY(storage_array);
 
 // Posicion inicial de los leds. Cambia a arrays si los tamaños de los datos son distintos a uno
 // const unsigned tam = barcos.get_size();
-int ledX[TAM] = {0, 0, 0};
-int ledY[TAM] = {7, 8, 9};
+
+//Jugador 1
+int ledX_j1[NUM_BARCOS][TAM];
+int ledY_j1[NUM_BARCOS][TAM];
+
+//Jugador 2
+int ledX_j2[NUM_BARCOS][TAM];
+int ledY_j2[NUM_BARCOS][TAM];
+
 // Esquina superior izquierda.
 
 // Color del led en formato RGB
@@ -117,7 +124,7 @@ void colocar_barcos(unsigned id_barco)
 
 void atacar(Battleship atacante, Battleship defensor);
 
-void display(Battleship barcos[])
+void display(Battleship barcos[], ejes &ledX, ejes &ledY)
 {
   unsigned tam = barcos->get_size();
   Vector<int> posX = barcos->get_ejeX();
@@ -177,12 +184,7 @@ void setup()
   led_matrix.show();
 
   inicializarX(ejeX, 7);
-  // Serial.println(ejeX.size());
-  /*for(unsigned i = 0; i < 3; i++)
-    Serial.println(ejeX[i]);*/
   inicializarY(ejeY, 7);
-  /*for(unsigned i = 0; i < 3; i++)
-    Serial.println(ejeY[i]);*/
   barcos = new Battleship(ejeX, ejeY);
   estado = COLOCACION;
 }
