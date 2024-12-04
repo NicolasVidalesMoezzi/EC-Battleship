@@ -54,10 +54,10 @@ unsigned char eventos;
 
 // NES
 
-byte nesRegister[2] = {0,0};  //jugador1, jugador2
-int data[2] = {4, 10};  // Pin de datos del controlador NES verde
-int clk = 2;   // Pin de clock del controlador NES blanco
-int latch[2] = {3, 9}; // Pin de latch del controlador NES negro
+byte nesRegister[2] = {0, 0}; // jugador1, jugador2
+int data[2] = {4, 10};        // Pin de datos del controlador NES verde
+int clk = 2;                  // Pin de clock del controlador NES blanco
+int latch[2] = {3, 9};        // Pin de latch del controlador NES negro
 
 /*
 byte nesRegister2 = 0;
@@ -66,6 +66,8 @@ int latch2 = 9;
 */
 
 // Barcos
+
+unsigned cont_derribados[2] = {0, 0}; // El numero de barcos que tiene derribados el jugador 1 (0) y jugador 2 (1)
 
 void inicializarX(ejes &valor, int inicio)
 {
@@ -76,30 +78,34 @@ void inicializarX(ejes &valor, int inicio)
   }
 }
 
-void mover_puntero(unsigned jugador,int &puntero[2])  //puntero[0] -> eje X ,  puntero[1] -> eje Y
+void mover_puntero(unsigned jugador, int &puntero[2]) // puntero[0] -> eje X ,  puntero[1] -> eje Y
 {
-  //puntero[0] = 0;
-  //puntero[1] = 0;
- // Movimientos de la cruceta
- while(bitRead(nesRegister[jugador], A_BUTTON) != 0))
- {
-  if (bitRead(nesRegister[jugador], UP_BUTTON) == 0 && puntero[1] > 0) {  //límite superior
-    --puntero[1];
-    Serial.println("arriba");
-  } 
-  if (bitRead(nesRegister[jugador], DOWN_BUTTON) == 0 && puntero[1] < MATRIX_HEIGHT -1) {  //límite inferior
-    ++puntero[1];
-    Serial.println("abajo");
+  // puntero[0] = 0;
+  // puntero[1] = 0;
+  // Movimientos de la cruceta
+  while (bitRead(nesRegister[jugador], A_BUTTON) != 0)
+  {
+    if (bitRead(nesRegister[jugador], UP_BUTTON) == 0 && puntero[1] > 0)
+    { // límite superior
+      --puntero[1];
+      Serial.println("arriba");
+    }
+    if (bitRead(nesRegister[jugador], DOWN_BUTTON) == 0 && puntero[1] < MATRIX_HEIGHT - 1)
+    { // límite inferior
+      ++puntero[1];
+      Serial.println("abajo");
+    }
+    if (bitRead(nesRegister[jugador], RIGHT_BUTTON) == 0 && puntero[0] < MATRIX_WIDTH - 1)
+    { // límite derecha
+      ++puntero[0];
+      Serial.println("derecha");
+    }
+    if (bitRead(nesRegister[jugador], LEFT_BUTTON) == 0 && puntero[0] > 0)
+    { // límite izquierda
+      --puntero[0];
+      Serial.println("izquierda");
+    }
   }
-  if (bitRead(nesRegister[jugador], RIGHT_BUTTON) == 0 && puntero[0] < MATRIX_WIDTH - 1) { //límite derecha
-    ++puntero[0];
-    Serial.println("derecha");
-  }
-  if (bitRead(nesRegister[jugador], LEFT_BUTTON) == 0 && puntero[0] > 0) { //límite izquierda
-    --puntero[0];
-    Serial.println("izquierda");
-  }
- }
 }
 
 void inicializarY(ejes &valor, int inicio)
@@ -116,12 +122,11 @@ int storage_array[ELEMENT_COUNT_MAX];
 ejes ejeX(storage_array);
 ejes ejeY(storage_array);
 
-
 Battleship barcos[2][NUM_BARCOS];
 // Posicion inicial de los leds. Cambia a arrays si los tamaños de los datos son distintos a uno
 // const unsigned tam = barcos.get_size();
 
-//Jugador1, Jugador2
+// Jugador1, Jugador2
 int ledX[2][NUM_BARCOS][TAM];
 int ledY[2][NUM_BARCOS][TAM];
 
@@ -130,7 +135,7 @@ int ledY[2][NUM_BARCOS][TAM];
 // Color del led en formato RGB
 uint32_t colorLed = led_matrix.Color(255, 0, 0); // Rojo puro
 // Funciones con barcos
-//0 <= jugador <= 1;  
+// 0 <= jugador <= 1;
 void colocar_barcos(unsigned jugador, unsigned &id_barco)
 {
   // Movimientos de la cruceta
@@ -154,38 +159,38 @@ void colocar_barcos(unsigned jugador, unsigned &id_barco)
     barcos[jugador][id_barco].mover(-1, 0);
     Serial.println("izquierda");
   }
-  if(bitRead(nesRegister[jugador], B_BUTTON) == 0)
+  if (bitRead(nesRegister[jugador], B_BUTTON) == 0)
   {
-    barcos[jugador][id_barco] = barcos[jugador][id_barco]^der;
+    barcos[jugador][id_barco] = barcos[jugador][id_barco] ^ der;
     Serial.println("rotar");
   }
-  if(bitRead(nesRegister[jugador], A_BUTTON) == 0)
+  if (bitRead(nesRegister[jugador], A_BUTTON) == 0)
   {
     id_barco++;
   }
 }
 
 void atacar(unsigned jugador)
-{ //el jugador atacante seleccionará una casilla hasta que pulse el botón A. En ese momento, se comprobará si ha tocado un barco o no, con sus respectivas ramificaciones
-  int puntero[2]; //almacena el lugar de la matriz donde se está apuntando
-  
-  for(int i=0; i<NUM_BARCOS; ++i)
+{                 // el jugador atacante seleccionará una casilla hasta que pulse el botón A. En ese momento, se comprobará si ha tocado un barco o no, con sus respectivas ramificaciones
+  int puntero[2]; // almacena el lugar de la matriz donde se está apuntando
+  mover_puntero(jugador, &puntero);
+  for (unsigned i = 0; i < NUM_BARCOS; i++)
   {
-    mover_puntero(jugador, &puntero);
-
-    if (bitRead(nesRegister, A_BUTTON) == 0) {
-      colorActual = matrix.Color(0, 0, 255);  // Azul
-    } 
-  }
-  
-  if(bitRead(nesRegister[jugador], A_BUTTON) == 0)
-  {
-    defensor.sethit();
-    if()
+    if (barcos[jugador][i].find(puntero))
+    {
+      // Cambia de color el led
+      // Hay que implementarlo.
+      if (barcos[jugador][i].get_derribado())
+        cont_derribados[jugador]++;
+      return; // Cuando encuentre una coincidencia se sale de la función
+    }
   }
 }
 
-void display(unsigned jugador, unsigned id_barco)
+unsigned
+
+    void
+    display(unsigned jugador, unsigned id_barco)
 {
   unsigned tam = barcos[jugador][id_barco].get_size();
   Vector<int> posX = barcos[jugador][id_barco].get_ejeX();
@@ -222,13 +227,13 @@ void actualizarMatriz(unsigned jugador, unsigned id_barco)
   for (int i = 0; i < TAM; ++i)
   {
     pixelIndex[i] = obtenerIndiceMatriz(ledX[jugador][id_barco][i], ledY[jugador][id_barco][i]); // Convierte las coordenadas (X, Y) al índice en la matriz en formato serpiente
-    led_matrix.setPixelColor(pixelIndex[i], colorLed);     // Establece el color del LED en la posición actual
-    led_matrix.show();                                     // Muestra los cambios en la matriz
+    led_matrix.setPixelColor(pixelIndex[i], colorLed);                                           // Establece el color del LED en la posición actual
+    led_matrix.show();                                                                           // Muestra los cambios en la matriz
   }
 }
 
-//int ledX[2][NUM_BARCOS];
-//int ledY[2][NUM_BARCOS];
+// int ledX[2][NUM_BARCOS];
+// int ledY[2][NUM_BARCOS];
 
 void setup()
 {
@@ -265,24 +270,33 @@ void loop()
 
   switch (estado)
   {
-    case COLOCACION:
-    static int i = 0;
-    static int j = 0;
-    while(i < NUM_BARCOS || j < NUM_BARCOS)
+  case COLOCACION:
+    static unsigned i = 0;
+    static unsigned j = 0;
+    while (i < NUM_BARCOS || j < NUM_BARCOS)
     {
-        colocar_barcos(0,i);
-        colocar_barcos(1,j);
+      colocar_barcos(0, i);
+      colocar_barcos(1, j);
     }
     estado = TURNO_JUGADOR_1;
     break;
   case TURNO_JUGADOR_1:
-
+    atacar(1);                            // ataca al jugador 2
+    if (cont_derribados[1] >= NUM_BARCOS) // Comprueba cuantos tiene derribados el jugador 2, si tiene el mismo numero que barcos entonces se pasa al fin de la partida
+      estado = FIN_PARTIDA;
+    else
+      estado = TURNO_JUGADOR_2;
     break;
   case TURNO_JUGADOR_2:
-
+    atacar(0);
+    if (cont_derribados[0] >= NUM_BARCOS)
+      estado = FIN_PARTIDA;
+    else
+      estado = TURNO_JUGADOR_1;
     break;
   case FIN_PARTIDA:
-
+    while(bitRead(nesRegister[0], SELECT_BUTTON) != 0 && bitRead(nesRegister[1], SELECT_BUTTON) != 0);
+    estado = COLOCACION;
     break;
   default:
     Serial.println("Error en la maquina de Estado...");
